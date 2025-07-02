@@ -1,4 +1,4 @@
-library("ggforce") #for drawing circles
+require("ggforce") #drawing circles in ggplot for baseline plots
 
 outlier_remove <- function(x, z=3) {
   # Remove outlier iteratively
@@ -159,13 +159,19 @@ distfix <- function(x,y,distance) {
 }
 
 # Calculate angle between 2 vectors (to compute scanpath)
-angle <- function(x,y){
-  dot.prod <- x%*%y 
-  norm.x <- norm(x,type="2")
-  norm.y <- norm(y,type="2")
-  theta <- acos(dot.prod / (norm.x * norm.y))
+angle <- function(a,b){
+  dot.prod <- a%*%b
+  norm.a <- norm(a,type="2")
+  norm.b <- norm(b,type="2")
+  theta <- acos(dot.prod / (norm.a * norm.b))
   theta.deg <- theta/pi*180
   as.numeric(theta.deg)
+  
+  #as.numeric(acos(a%*%b / (norm(a,type="2") * norm(b,type="2")))/pi*180)
+}
+
+angle.coords <- function(x1, y1, x2, y2) {
+  return(angle(c(x1, y1), c(x2, y2)))
 }
 
 #creates new variables that are accessible in the global environment (see "<<-")

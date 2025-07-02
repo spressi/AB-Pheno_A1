@@ -6,6 +6,8 @@ path.eye = "data/eye/Output/" %>% paste0(path, .)
 
 files.behavior = path.data %>% list.files(pattern = "_custom.csv", full.names = T)
 files.physio = "physio/" %>% paste0(path.data, .) %>% list.files(pattern = ".txt", full.names = T)
+file.que = "questionnaires/" %>% paste0(path.data, .) %>% list.files(pattern = "data_ab-pheno_a1.csv", full.names = T)
+# file.que.r = "questionnaires/" %>% paste0(path.data, .) %>% list.files(pattern = "\\.r", full.names = T)
 
 
 se <- function(x, na.rm = TRUE) {

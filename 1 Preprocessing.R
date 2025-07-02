@@ -16,7 +16,29 @@ maxDeviation_rel = 3 #max abs value of z-score
 outlierLimit.eye = .5 #maximum percentage of invalid baselines per subject
 maxSpread = 150 #maximum spread of valid baselines (diameter / edge length)
 usePointDistance = T #use point (vector) distance instead of coordinates independently?
-source("eye_validateBaselines.R")
+source("eye_helpers.R")
+
+
+# Questionnaires ----------------------------------------------------------
+# source(file.que.r); questionnaires = ds; rm(ds) #not working
+questionnaires = file.que %>% read_csv2() %>% 
+  rename(subject = VP01s, age = SD01, gender = SD04, 
+         hand = SD06, edu = SD02, work = SD03, comment = SD07_01) %>% 
+  rename_with(function(x) {gsub("FB02_", "stai", x)}) %>% 
+  select(subject, everything()) %>% 
+  filter(subject %>% grepl("test", .) == F) %>% #discard test
+  filter(subject %>% duplicated(fromLast = T) == F) %>% #always keep last instance of subject number
+  mutate(age = age + 17, #don't ask why xD... first response selection is "18")
+         gender = gender %>% case_match(1 ~ "male",
+                                        2 ~ "female",
+                                        3 ~ "non-binary") %>% as_factor(),
+         #reverse coding is already done implicitly within SoSciSurvey (cf. Codebook)
+         #across(paste0("sias", c("05", "09", "11"), function(x) return(6 - x))),
+  )
+questionnaires = questionnaires %>% 
+  mutate(sias = questionnaires %>% select(starts_with("sias")) %>% rowMeans(),
+         stai = questionnaires %>% select(starts_with("stai")) %>% rowMeans()) %>% 
+  select(subject, gender, age, sias, stai)
 
 # Behavior ----------------------------------------------------------------
 ## don't the the following! filter by block instead!
@@ -151,13 +173,13 @@ baselines.trial = baselines.trial %>% bind_rows(.id = "subject") %>% tibble() %>
 
 
 baselines.summary %>% summarize(.by=subject, included = mean(included)) %>% arrange(included)
-inclusions.eye.baseline = baselines.summary %>% filter(included) %>% pull(subject) %>% unique()
+baselines.summary %>% pull(included) %>% mean()
 
-baselines.summary.valid = baselines.summary %>% filter(subject %in% inclusions.eye.baseline)
-baselines.summary.valid %>% pull(included) %>% mean()
+exclusions.eye.baseline = baselines.summary %>% filter(included == F) %>% pull(subject) %>% unique()
+baselines.summary.valid = baselines.summary %>% filter(subject %in% exclusions.eye.baseline == F)
 
-
-for (code in inclusions.eye.baseline) {
+eye = tibble()
+for (code in baselines.summary.valid %>% pull(subject) %>% unique() %>% sort()) {
   #code = inclusions.eye.baseline %>% sample(1)
   cat(paste(code, "... "))
   
@@ -167,10 +189,12 @@ for (code in inclusions.eye.baseline) {
     left_join(baselines.vp %>% rename(blx = x, bly = y), by = join_by(subject, block, subject_block, trial)) %>% 
     left_join(baselines.vp %>% filter(blok) %>% summarize(.by=block, x = mean(x), y = mean(y)) %>% rename(blx.avg = x, bly.avg = y), by = join_by(block)) %>% 
     mutate(x = x - if_else(blok, blx, blx.avg),
-           y = y - if_else(blok, bly, bly.avg),
-           roi = case_when(x <= leftRoi ~ "left",
-                           x >= rightRoi ~ "right",
-                           T ~ "center"))
+           y = y - if_else(blok, bly, bly.avg)) %>% 
+    select(subject:y, condition) %>% #drop baseline parameters
+    select(-subject_full) %>% #better overview
+    mutate(roi = case_when(x <= leftRoi ~ "left",
+                    x >= rightRoi ~ "right",
+                    T ~ "center"))
   
   for (block_i in fix.vp %>% pull(block) %>% unique() %>% sort()) {
     #block_i = 1
@@ -184,19 +208,32 @@ for (code in inclusions.eye.baseline) {
       #anticipation
       #anticipation.start = mes.trial %>% filter(message %>% grepl(expoID, .)) %>% pull(time)
       anticipation.start = mes.trial %>% filter(message %>% grepl("Anticipation", .)) %>% pull(time)
-      anticipation.end = mes.trial %>% filter(message %>% grepl("kongruent", .)) %>% pull(time)
-      fix.trial %>% mutate(start = start - anticipation.start,
-                           start = if_else(start < 0, 0, start),
-                           end = if_else(end > anticipation.end, anticipation.end, end), #anticipation.end is not time corrected => prune times before adjusting by anticipation.start
-                           end = end - anticipation.start,
-                           dur = end - start) %>% filter(dur > 0) %>% 
-        select(subject, block, trial, start, end, dur, x, y, roi)
-      #TODO scanpath length? roiswitches?
+      anticipation.end = mes.trial %>% filter(message %>% grepl("kongruent", .)) %>% pull(time) #also checks for "inkongruent"
+      fix.trial.antic = fix.trial %>% 
+        mutate(start = start - anticipation.start,
+               start = if_else(start < 0, 0, start),
+               end = if_else(end > anticipation.end, anticipation.end, end), #anticipation.end is not time corrected => prune times before adjusting by anticipation.start
+               end = end - anticipation.start,
+               dur = end - start) %>% filter(dur > 0) %>% 
+        select(subject, block, trial, start, end, dur, x, y, roi) %>% 
+        mutate(dist = pointDistance(lag(x), lag(y), x, y))
+        
+      result = tibble(subject = code, block = block_i, trial = trial_i) %>% 
+        bind_cols(fix.trial.antic %>% summarize(antic_dist = sum(dist, na.rm=T))) %>% #scanpath in pixels
+        bind_cols(fix.trial.antic %>% filter(roi != "center") %>% #only switches between left and right
+                    summarize(antic_roiSwitches = {roi != lag(roi)} %>% sum(na.rm=T)))
       
       #cue
       cue.start = anticipation.end #mes.trial %>% filter(message %>% grepl("kongruent", .)) %>% pull(time)
       cue.end = cue.start + cueTime
-      fix.trial %>% 
+      cue.conditions = mes.trial %>% filter(message %>% grepl("kongruent", .)) %>% select(message) %>% 
+        separate(message, into=c(NA, NA, "antic", "pic", "picPos", "sound", "congruency", "target", "targetPos"), sep=", ") %>% 
+        mutate(emotion = if_else(pic %>% grepl("_n_", .), "neutral", "angry"))
+      cueSide = cue.conditions %>% 
+        pull(picPos) %>% as.numeric() %>% {if_else(. < 0, "left", "right")}
+      cueEmotion = cue.conditions %>% pull(emotion)
+      
+      fix.trial.cue = fix.trial %>% 
         mutate(start = start - cue.start,
                start = if_else(start < 0, 0, start),
                end = end - cue.start,
@@ -205,11 +242,19 @@ for (code in inclusions.eye.baseline) {
         select(subject, block, trial, start, end, dur, x, y, roi) %>% 
         filter(start > 0) %>% #discard initial fixation (from anticipation phase)
         summarize(.by = roi,
-                  dwell = sum(dur)/cueTime,
-                  lat = min(start)) %>% 
-        filter(roi != "center") %>% 
-        pivot_wider(names_from = roi, values_from = -roi)
-      #TODO save results
+                  cue_dwell = sum(dur)/cueTime,
+                  cue_lat = min(start)) %>% 
+        # filter(roi != "center") %>% 
+        # pivot_wider(names_from = roi, values_from = -roi) %>% 
+        filter(roi == cueSide) %>% select(-roi)
+      
+      if (nrow(fix.trial.cue) == 0) fix.trial.cue = tibble(cue_dwell = 0, cue_lat = cueTime)
+      
+      result = result %>% bind_cols(fix.trial.cue %>% mutate(emotion = cueEmotion))
+      
+      #TODO target phase? using congrency
+      
+      eye = eye %>% bind_rows(result)
     }
   }
 }
