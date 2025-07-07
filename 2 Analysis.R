@@ -96,6 +96,8 @@ eye.cue = eye %>% select(subject:trial, emotion, starts_with("cue_")) %>%
 #Latency
 with(eye.cue, t.test(cue_lat_angry, cue_lat_neutral, 
                      alternative = "less", paired=T)) %>% apa::t_apa(es_ci=T)
+eye.cue %>% summarize(cue_lat_angry = mean(cue_lat_angry),
+                      cue_lat_neutral = mean(cue_lat_neutral))
 
 #Dwell  Time
 with(eye.cue, t.test(cue_dwell_angry, cue_dwell_neutral, 
