@@ -37,8 +37,11 @@ questionnaires = file.que %>% read_csv2() %>%
   )
 questionnaires = questionnaires %>% 
   mutate(sias = questionnaires %>% select(starts_with("sias")) %>% rowMeans(),
-         stai = questionnaires %>% select(starts_with("stai")) %>% rowMeans()) %>% 
-  select(subject, gender, age, sias, stai)
+         stai = questionnaires %>% select(starts_with("stai")) %>% rowMeans(),
+         sias_z_sq = scale(sias)[,1]^2,
+         stai_z_sq = scale(stai)[,1]^2) %>% 
+  select(subject, gender, age, sias, stai, contains("z_sq"))
+#questionnaires %>% ggplot(aes(y = sias_z_sq, x = sias)) + geom_point()
 
 # Behavior ----------------------------------------------------------------
 ## don't the the following! filter by block instead!

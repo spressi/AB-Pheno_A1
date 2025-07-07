@@ -5,7 +5,7 @@ library(apa)
 
 
 # Descriptives ------------------------------------------------------------
-questionnaires %>% select(-subject) %>% summarize(across(-gender, list(m = mean, sd = sd), na.rm=T))
+questionnaires %>% select(age:stai) %>% summarize(across(everything(), list(m = mean, sd = sd), na.rm=T))
 questionnaires %>% count(gender)
 
 # RT ----------------------------------------------------------------------
@@ -62,22 +62,27 @@ behavior.acc %>% summarize(.by = c(emotion, congruency),
 eye.antic = eye %>% select(subject:trial, starts_with("antic_")) %>% 
   summarize(.by = subject,
             antic_dist = mean(antic_dist, na.rm=T),
-            antic_roiSwitches = mean(antic_roiSwitches, na.rm=T))
+            antic_roiSwitches = mean(antic_roiSwitches, na.rm=T)) %>% 
+  mutate(across(-subject, list(z_sq = function(x) {x = scale(x)[,1]^2}))) %>% 
+  left_join(questionnaires)
 
 #Scan Path Length
 eye.antic %>% pull(antic_dist) %>% summary()
 eye.antic %>% pull(antic_dist) %>% hist()
 eye.antic %>% summarize(across(antic_dist, list(m = mean, sd = sd)))
 
-#TODO correl with (social) anxiety (qudaratic predictor!)
+with(eye.antic, cor.test(antic_dist_z_sq, sias, alternative="greater")) %>% apa::cor_apa(r_ci=T)
+with(eye.antic, cor.test(antic_dist_z_sq, stai, alternative="greater")) %>% apa::cor_apa(r_ci=T)
 
 #ROI Switches
 eye.antic %>% pull(antic_roiSwitches) %>% summary()
 eye.antic %>% pull(antic_roiSwitches) %>% hist()
 eye.antic %>% summarize(across(antic_roiSwitches, list(m = mean, sd = sd)))
 
-#TODO correl with (social) anxiety (qudaratic predictor!)
+with(eye.antic, cor.test(antic_roiSwitches_z_sq, sias, alternative="greater")) %>% apa::cor_apa(r_ci=T)
+with(eye.antic, cor.test(antic_roiSwitches_z_sq, stai, alternative="greater")) %>% apa::cor_apa(r_ci=T)
 
+#Intercorrelation: Scan Path & ROI switches
 with(eye.antic, cor.test(antic_dist, antic_roiSwitches)) %>% apa::cor_apa(r_ci=T)
 
 
