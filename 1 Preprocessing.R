@@ -230,8 +230,12 @@ for (code in baselines.summary.valid %>% pull(subject) %>% unique() %>% sort()) 
       cue.start = anticipation.end #mes.trial %>% filter(message %>% grepl("kongruent", .)) %>% pull(time)
       cue.end = cue.start + cueTime
       cue.conditions = mes.trial %>% filter(message %>% grepl("kongruent", .)) %>% select(message) %>% 
-        separate(message, into=c(NA, NA, "antic", "pic", "picPos", "sound", "congruency", "target", "targetPos"), sep=", ") %>% 
-        mutate(emotion = if_else(pic %>% grepl("_n_", .), "neutral", "angry"))
+        separate(message, into=c(NA, NA, "antic", "pic", "picPos", "sound", "congruency", "target", "targetPos"), sep=", ") %>%
+        #mutate(emotion = if_else(pic %>% grepl("_n_", .), "neutral", "angry"))
+        separate(pic, into=c("model", "model_age", "model_gender", "emotion", "snapshot", "fileExt"), sep="_|\\.") %>% #, remove = F
+        mutate(emotion = emotion %>% case_match("a" ~ "angry", "d" ~ "disgusted", "f" ~ "fearful", "n" ~ "neutral", "s" ~ "sad"),
+               model_age = model_age %>% case_match("y" ~ "young", "m" ~ "middle", "o" ~ "old"),
+               model_gender = model_gender %>% case_match("m" ~ "male", "f" ~ "female"))
       cueSide = cue.conditions %>% 
         pull(picPos) %>% as.numeric() %>% {if_else(. < 0, "left", "right")}
       cueEmotion = cue.conditions %>% pull(emotion)
@@ -253,7 +257,7 @@ for (code in baselines.summary.valid %>% pull(subject) %>% unique() %>% sort()) 
       
       if (nrow(fix.trial.cue) == 0) fix.trial.cue = tibble(cue_dwell = 0, cue_lat = cueTime)
       
-      result = result %>% bind_cols(fix.trial.cue %>% mutate(emotion = cueEmotion))
+      result = result %>% bind_cols(fix.trial.cue %>% mutate(emotion = cueEmotion)) #TODO bind_cols(cue.conditions) instead?
       
       #TODO target phase? using congrency
       
