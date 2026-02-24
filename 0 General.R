@@ -32,10 +32,20 @@ file.que = "questionnaires/" %>% paste0(path.data, .) %>% list.files(pattern = "
 
 # A Priori Exclusions -----------------------------------------------------
 exclusions.phys.trials = list()
-#exclusions.phys.trials[["vp01.txt"]] =  100:103 #discard trials 100-103 of subject vp01.txt manually
+exclusions.phys.trials[["10"]] =  1:3 #discard trials 1-3 of subject 10 manually
+exclusions.phys.trials[["41"]] =  1:2 #discard trials 1-2 of subject 41 manually
+exclusions.phys.trials[["43"]] =  1:3 #discard trials 1-3 of subject 43 manually
 
 
 # Functions ---------------------------------------------------------------
+pathToCode = function(path, path.sep="/", file.ext="\\.") {
+  first = path %>% gregexpr(path.sep, .) %>% lapply(max) %>% unlist() %>% {. + 1} %>% 
+    pmax(1, .) #if first not found, set it to start of string
+  last = path %>% gregexpr(file.ext, .) %>% lapply(max) %>% unlist() %>% {. - 1}
+  last = ifelse(last < 1, sapply(path, str_length), last) #if last cannot be found, set it to end of string
+  return(path %>% substring(first, last))
+}
+
 se = function(x, na.rm = TRUE) {
   sd(x, na.rm) / sqrt(if(!na.rm) length(x) else sum(!is.na(x)))
 }

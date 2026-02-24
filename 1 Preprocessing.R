@@ -270,19 +270,19 @@ for (code in baselines.summary.valid %>% pull(subject) %>% unique() %>% sort()) 
 
 # ECG ---------------------------------------------------------------------
 breaks.theory = length(breakPositions.theory)
-maxDistBlock = max(itiEnd)/1000 * sample.rate * 1.2 #max trial time (in seconds) * sampling rate * 20% buffer
+maxDistBlock = max(itiEnd)/1000 * sample.rate * 1.1 #max trial time (in seconds) * sampling rate * 10% buffer
 for (file in files.physio) {
   #file = files.physio %>% sample(1) #for testing
   data = file %>% 
     read_delim(delim="\t", na="", skip=9, progress=F, show_col_types=F) %>% suppressMessages() %>% 
     rename(EDA = "CH1", ECG = "CH2", Trigger = "CH28") %>%
     filter(Trigger <= 2^8) %>% select(Trigger)
-  mst = data$Trigger %>% diff() %>% {. > 0} %>% which() %>% {. + 1}
+  mst = data %>% pull(Trigger) %>% diff() %>% {. > 0} %>% which() %>% {. + 1}
   
-  endFlag = ""
-  if (exclusions.phys.trials[[file]] %>% is.null() == F) {
-    endFlag = " (after manual trial exclusion)" 
-    mst = mst[-exclusions.phys.trials[[file]]]
+  endFlags = c()
+  if (exclusions.phys.trials[[file %>% pathToCode()]] %>% is.null() == F) {
+    endFlags = "(after manual trial exclusion)" %>% c(endFlags, .)
+    mst = mst[-exclusions.phys.trials[[file %>% pathToCode()]]]
   }
   
   markerDist = mst %>% diff()
@@ -290,10 +290,26 @@ for (file in files.physio) {
   breaks.detected = length(breakPositions.detected)
   #markerDist %>% sort(decreasing = T) %>% head(breaks.detected+2)
   
-  cat(paste0(file, ": ", length(mst), " trials, ", 
-             breaks.detected, " break(s) at ", paste(breakPositions.detected, collapse=", "), endFlag), "\n")
+  problem = length(mst)!=trials.n || breaks.theory!=breaks.detected || any(breakPositions.theory!=breakPositions.detected)
   
-  if (length(mst)!=trials.n || breaks.theory!=breaks.detected || any(breakPositions.theory!=breakPositions.detected)) 
-    warning(file)
+  if (problem & breaks.detected - (trials.n - length(mst)) == breaks.theory)
+    endFlags = "(some breaks are missing trials)" %>% c(endFlags, .)
+  
+  if (problem)
+    cat(paste0(file %>% pathToCode(), ": ", length(mst), " trials, ", 
+               breaks.detected, " break(s) after ", paste(breakPositions.detected, collapse=", "), paste0(" ", endFlags, collapse = "; ")), "\n")
+  
+  # if (problem) 
+  #   warning(file)
 }
-
+# missing triggers (note: every missing trial requires current & subsequent break positions to be increased by 1)
+#04: triggers missing in trials 143 & 188
+#08: triggers missing in trials 209, 211, 235, 252
+#10: triggers missing in trials 9, 12, 26, 33
+#13: first 3 trials missing (recording started too late)
+#21: triggers missing in trials 173, 180, 187, 230, 248, 256? or two trials missing in a row during last block?
+#24 ?
+#27: triggers missing in trials 89, 94, 193
+#29: triggers missing in trials 160, 165, 167, 191
+#30 ?
+#32: trigger  missing in trial  184
