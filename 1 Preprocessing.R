@@ -269,4 +269,31 @@ for (code in baselines.summary.valid %>% pull(subject) %>% unique() %>% sort()) 
 }
 
 # ECG ---------------------------------------------------------------------
+breaks.theory = length(breakPositions.theory)
+maxDistBlock = max(itiEnd)/1000 * sample.rate * 1.2 #max trial time (in seconds) * sampling rate * 20% buffer
+for (file in files.physio) {
+  #file = files.physio %>% sample(1) #for testing
+  data = file %>% 
+    read_delim(delim="\t", na="", skip=9, progress=F, show_col_types=F) %>% suppressMessages() %>% 
+    rename(EDA = "CH1", ECG = "CH2", Trigger = "CH28") %>%
+    filter(Trigger <= 2^8) %>% select(Trigger)
+  mst = data$Trigger %>% diff() %>% {. > 0} %>% which() %>% {. + 1}
+  
+  endFlag = ""
+  if (exclusions.phys.trials[[file]] %>% is.null() == F) {
+    endFlag = " (after manual trial exclusion)" 
+    mst = mst[-exclusions.phys.trials[[file]]]
+  }
+  
+  markerDist = mst %>% diff()
+  breakPositions.detected = which(markerDist > maxDistBlock)
+  breaks.detected = length(breakPositions.detected)
+  #markerDist %>% sort(decreasing = T) %>% head(breaks.detected+2)
+  
+  cat(paste0(file, ": ", length(mst), " trials, ", 
+             breaks.detected, " break(s) at ", paste(breakPositions.detected, collapse=", "), endFlag), "\n")
+  
+  if (length(mst)!=trials.n || breaks.theory!=breaks.detected || any(breakPositions.theory!=breakPositions.detected)) 
+    warning(file)
+}
 
