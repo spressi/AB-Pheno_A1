@@ -36,7 +36,7 @@ exclusions.phys.trials = list()
 
 
 # Functions ---------------------------------------------------------------
-se <- function(x, na.rm = TRUE) {
+se = function(x, na.rm = TRUE) {
   sd(x, na.rm) / sqrt(if(!na.rm) length(x) else sum(!is.na(x)))
 }
 
