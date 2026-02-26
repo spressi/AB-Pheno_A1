@@ -271,6 +271,8 @@ for (code in baselines.summary.valid %>% pull(subject) %>% unique() %>% sort()) 
 # ECG ---------------------------------------------------------------------
 breaks.theory = length(breakPositions.theory)
 maxDistBlock = max(itiEnd)/1000 * sample.rate * 1.1 #max trial time (in seconds) * sampling rate * 10% buffer
+
+physiology.trials.missing = tibble()
 for (file in files.physio) {
   #file = files.physio %>% sample(1) #for testing
   data = file %>% 
@@ -288,28 +290,69 @@ for (file in files.physio) {
   markerDist = mst %>% diff()
   breakPositions.detected = which(markerDist > maxDistBlock)
   breaks.detected = length(breakPositions.detected)
-  #markerDist %>% sort(decreasing = T) %>% head(breaks.detected+2)
   
-  problem = length(mst)!=trials.n || breaks.theory!=breaks.detected || any(breakPositions.theory!=breakPositions.detected)
+  problem = length(mst)!=trials.n || breaks.detected!=breaks.theory || any(breakPositions.detected!=breakPositions.theory)
   
-  if (problem & breaks.detected - (trials.n - length(mst)) == breaks.theory)
-    endFlags = "(some breaks are missing trials)" %>% c(endFlags, .)
-  
-  if (problem)
+  if (problem) {
+    # if (breaks.detected - (trials.n - length(mst)) == breaks.theory)
+    #   endFlags = "(some breaks are missing trials)" %>% c(endFlags, .)
+    
     cat(paste0(file %>% pathToCode(), ": ", length(mst), " trials, ", 
                breaks.detected, " break(s) after ", paste(breakPositions.detected, collapse=", "), paste0(" ", endFlags, collapse = "; ")), "\n")
+    
+    #markerDist %>% sort(decreasing = T) %>% head(breaks.detected+2)
+    gaps = tibble(dist.samples = markerDist) %>% mutate(trial = 1:n(), dist.trials = dist.samples %/% maxDistBlock) %>% relocate(trial) %>% arrange(desc(dist.samples))
+    trials.missing = gaps %>% tail(-breaks.theory) %>% #assume longest breaks are correct ones
+      arrange(trial) %>% mutate(trials.sum = cumsum(dist.trials)) %>% 
+      filter(trials.sum <= trials.n - length(mst), dist.trials > 0)
+    
+    if (trials.missing %>% nrow() == 0) { #not too many gaps between trials => assume first trials are missing
+      trials.corrected = trials.n #implied by assuming trials.missing == trials.n - length(mst)
+      breakPositions.detected.corrected = breakPositions.detected + trials.n - length(mst)
+      
+      problem.corrected = trials.corrected!=trials.n || length(breakPositions.detected.corrected)!=breaks.theory || any(breakPositions.detected.corrected!=breakPositions.theory)
+      if (problem.corrected==F) {
+        physiology.trials.missing.s = tibble(subject = file %>% pathToCode(),
+                                             trial = 1, trials.missing = trials.n - length(mst)) %>% 
+          rowwise() %>% mutate(trials.missing.seq = seq.int(trial, trial + trials.missing - 1) %>% paste(collapse = ", ")) %>% ungroup()
+        
+        physiology.trials.missing = physiology.trials.missing %>% bind_rows(physiology.trials.missing.s)
+        
+        cat(paste0("successfully corrected ", file %>% pathToCode(), ": ", trials.corrected, " trials, ", 
+                   length(breakPositions.detected.corrected), " break(s) after ", 
+                   paste(breakPositions.detected.corrected, collapse=", "),
+                   "; missing trials: ", paste(physiology.trials.missing.s %>% pull(trials.missing.seq), collapse=", ")), "\n")
+      }
+      
+    } else { #too many gaps between trials => assume missing triggers
+      breakPositions.detected.corrected = breakPositions.detected
+      for (t in trials.missing %>% pull(trial)) {
+        breakPositions.detected.corrected[breakPositions.detected > t & breakPositions.detected %in% {trials.missing %>% pull(trial)} == F] = 
+          breakPositions.detected.corrected[breakPositions.detected > t & breakPositions.detected %in% {trials.missing %>% pull(trial)} == F] + 
+          trials.missing %>% filter(trial==t) %>% pull(dist.trials)
+      }
+      trials.corrected = length(mst) + trials.missing %>% pull(trials.sum) %>% max()
+      breakPositions.detected.corrected = breakPositions.detected.corrected %>% setdiff(trials.missing %>% pull(trial))
+      
+      problem.corrected = trials.corrected!=trials.n || length(breakPositions.detected.corrected)!=breaks.theory || any(breakPositions.detected.corrected!=breakPositions.theory)
+      if (problem.corrected==F) {
+        trials.missing = trials.missing %>% mutate(helper = 1, helper.sum = cumsum(helper)) %>% 
+          transmute(trial = trial + helper.sum, trials.missing = dist.trials)
+        
+        physiology.trials.missing.s = trials.missing %>% mutate(subject = file %>% pathToCode()) %>% relocate(subject) %>% 
+          rowwise() %>% mutate(trials.missing.seq = seq.int(trial, trial + trials.missing - 1) %>% paste(collapse = ", ")) %>% ungroup()
+        
+        physiology.trials.missing = physiology.trials.missing %>% bind_rows(physiology.trials.missing.s)
+        
+        cat(paste0("successfully corrected ", file %>% pathToCode(), ": ", trials.corrected, " trials, ", 
+                   length(breakPositions.detected.corrected), " break(s) after ", 
+                   paste(breakPositions.detected.corrected, collapse=", "),
+                   "; missing trials: ", paste(physiology.trials.missing.s %>% pull(trials.missing.seq), collapse=", ")), "\n")
+      }
+    }
+  }
   
   # if (problem) 
   #   warning(file)
 }
-# missing triggers (note: every missing trial requires current & subsequent break positions to be increased by 1)
-#04: triggers missing in trials 143 & 188
-#08: triggers missing in trials 209, 211, 235, 252
-#10: triggers missing in trials 9, 12, 26, 33
-#13: first 3 trials missing (recording started too late)
-#21: triggers missing in trials 173, 180, 187, 230, 248, 256? or two trials missing in a row during last block?
-#24 ?
-#27: triggers missing in trials 89, 94, 193
-#29: triggers missing in trials 160, 165, 167, 191
-#30 ?
-#32: trigger  missing in trial  184
+physiology.trials.missing
