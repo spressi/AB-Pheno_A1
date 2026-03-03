@@ -307,6 +307,7 @@ for (file in files.physio) {
       arrange(trial) %>% mutate(trials.sum = cumsum(dist.trials)) %>% 
       filter(trials.sum <= trials.n - length(mst), dist.trials > 0)
     
+    problem.corrected = problem
     if (trials.missing %>% nrow() == 0) { #not too many gaps between trials => assume first trials are missing
       trials.corrected = trials.n #implied by assuming trials.missing == trials.n - length(mst)
       breakPositions.detected.corrected = breakPositions.detected + trials.n - length(mst)
@@ -336,7 +337,7 @@ for (file in files.physio) {
       breakPositions.detected.corrected = breakPositions.detected.corrected %>% setdiff(trials.missing %>% pull(trial))
       
       problem.corrected = trials.corrected!=trials.n || length(breakPositions.detected.corrected)!=breaks.theory || any(breakPositions.detected.corrected!=breakPositions.theory)
-      if (problem.corrected==F) {
+      if (problem.corrected==F) { #problem has been corrected
         trials.missing = trials.missing %>% mutate(helper = 1, helper.sum = cumsum(helper)) %>% 
           transmute(trial = trial + helper.sum, trials.missing = dist.trials)
         
@@ -353,7 +354,16 @@ for (file in files.physio) {
     }
   }
   
+  if (problem.corrected) { #previous assumptions not correct => assume last trial(s) are missing
+    nextTrial = length(mst) + {trials.missing %>% pull(dist.trials) %>% sum()} + 1
+    physiology.trials.missing = physiology.trials.missing %>% bind_rows(
+      tibble(subject = file %>% pathToCode(), 
+             trial = nextTrial,
+             trials.missing = trials.n - nextTrial) %>% 
+        rowwise() %>% mutate(trials.missing.seq = seq.int(trial, trial + trials.missing - 1) %>% paste(collapse = ", ")) %>% ungroup())
+  }
+  
   # if (problem) 
   #   warning(file)
 }
-physiology.trials.missing
+physiology.trials.missing %>% print(n = nrow(.))
