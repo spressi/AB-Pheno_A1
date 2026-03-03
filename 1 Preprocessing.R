@@ -89,6 +89,7 @@ behavior %>% select(subject, block) %>% unique() %>% complete(subject, block) %>
 #subject 10: block 1 started again after 3 trials => moved to subfolder in order to ignore
 #subject 21: 3rd block missing
 #subject 36: blocks 1-3 missing
+#subject 46: block 4 missing
 
 behavior = behavior %>% 
   mutate(.by = subject,
