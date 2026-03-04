@@ -292,7 +292,7 @@ for (file in files.physio) {
   breakPositions.detected = which(markerDist > maxDistBlock)
   breaks.detected = length(breakPositions.detected)
   
-  problem = length(mst)!=trials.n || breaks.detected!=breaks.theory || any(breakPositions.detected!=breakPositions.theory)
+  problem = length(mst)!=trials.n || breaks.detected!=breaks.theory || any(breakPositions.detected!=breakPositions.theory); problem.corrected = problem
   
   if (problem) {
     # if (breaks.detected - (trials.n - length(mst)) == breaks.theory)
@@ -307,7 +307,6 @@ for (file in files.physio) {
       arrange(trial) %>% mutate(trials.sum = cumsum(dist.trials)) %>% 
       filter(trials.sum <= trials.n - length(mst), dist.trials > 0)
     
-    problem.corrected = problem
     if (trials.missing %>% nrow() == 0) { #not too many gaps between trials => assume first trials are missing
       trials.corrected = trials.n #implied by assuming trials.missing == trials.n - length(mst)
       breakPositions.detected.corrected = breakPositions.detected + trials.n - length(mst)
