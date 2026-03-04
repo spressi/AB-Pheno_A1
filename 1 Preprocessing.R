@@ -365,4 +365,17 @@ for (file in files.physio) {
   # if (problem) 
   #   warning(file)
 }
-physiology.trials.missing %>% print(n = nrow(.))
+physiology.trials.missing.compact = physiology.trials.missing
+physiology.trials.missing.compact %>% print(n = nrow(.))
+physiology.trials.missing = physiology.trials.missing %>% select(subject, trials.missing.seq) %>% separate_longer_delim(trials.missing.seq, ", ") %>% rename(trial = trials.missing.seq)
+
+##when merging conditions, you can account for missing trials using anti_join:
+# conditions = physiology.trials.missing %>% select(subject) %>% unique() %>% 
+#     crossing(tibble(trial = 1:max(physiology.trials.missing %>% pull(trial)))) %>% 
+#   mutate(condition = sample.int(4, size=n(), replace=T))
+# 
+## physiology.trials.missing %>% left_join(conditions) #check missing conditions
+# conditions.reduced = conditions %>% anti_join(physiology.trials.missing)
+# tibble(conditions.n = conditions %>% nrow(),
+#        conditions.reduced.n = conditions.reduced %>% nrow(),
+#        missings.n = physiology.trials.missing %>% nrow()) %>% mutate(check = conditions.n == conditions.reduced.n + missings.n)
