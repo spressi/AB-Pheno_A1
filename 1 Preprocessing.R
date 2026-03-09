@@ -274,6 +274,8 @@ breaks.theory = length(breakPositions.theory)
 maxDistBlock = max(itiEnd)/1000 * sample.rate * 1.1 #max trial time (in seconds) * sampling rate * 10% buffer
 
 physiology.trials.missing = tibble()
+# physiology.markers = c()
+# physiology.markers.length = tibble()
 for (file in files.physio) {
   #file = files.physio %>% sample(1) #for testing
   data = file %>% 
@@ -281,6 +283,10 @@ for (file in files.physio) {
     rename(EDA = "CH1", ECG = "CH2", Trigger = "CH28") %>%
     filter(Trigger <= 2^8) %>% select(Trigger)
   mst = data %>% pull(Trigger) %>% diff() %>% {. > 0} %>% which() %>% {. + 1}
+  
+  # mlength = data %>% pull(Trigger) %>% diff() %>% {. < 0} %>% which() %>% {. + 1} %>% {. - mst}
+  # physiology.markers = physiology.markers %>% c(mlength)
+  # physiology.markers.length = physiology.markers.length %>% bind_rows(tibble(subject = file %>% pathToCode(), min = min(mlength), max = max(mlength), mean = mean(mlength), sd = sd(mlength)))
   
   endFlags = c()
   if (exclusions.phys.trials[[file %>% pathToCode()]] %>% is.null() == F) {
@@ -367,3 +373,6 @@ for (file in files.physio) {
   #   warning(file)
 }
 physiology.trials.missing %>% print(n = nrow(.))
+
+# physiology.markers %>% Filter(\(x) (x < 9), .) %>% hist()
+# physiology.markers.length
