@@ -20,7 +20,8 @@ rightRoi = screen.width*(1/2-1/3)
 
 
 # Paths -------------------------------------------------------------------
-path = "C:/Data/AB_A1/"
+path = "C:/Data/AB_A1/" #@work
+#path = path %>% gsub("C:/Data/", "D:/Arbeit/", .) #@home
 path.data = "data/" %>% paste0(path, .)
 path.eye = "data/eye/Output/" %>% paste0(path, .)
 

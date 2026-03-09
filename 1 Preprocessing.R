@@ -298,7 +298,7 @@ for (file in files.physio) {
   breakPositions.detected = which(markerDist > maxDistBlock)
   breaks.detected = length(breakPositions.detected)
   
-  problem = length(mst)!=trials.n || breaks.detected!=breaks.theory || any(breakPositions.detected!=breakPositions.theory)
+  problem = length(mst)!=trials.n || breaks.detected!=breaks.theory || any(breakPositions.detected!=breakPositions.theory); problem.corrected = problem
   
   if (problem) {
     # if (breaks.detected - (trials.n - length(mst)) == breaks.theory)
@@ -313,7 +313,6 @@ for (file in files.physio) {
       arrange(trial) %>% mutate(trials.sum = cumsum(dist.trials)) %>% 
       filter(trials.sum <= trials.n - length(mst), dist.trials > 0)
     
-    problem.corrected = problem
     if (trials.missing %>% nrow() == 0) { #not too many gaps between trials => assume first trials are missing
       trials.corrected = trials.n #implied by assuming trials.missing == trials.n - length(mst)
       breakPositions.detected.corrected = breakPositions.detected + trials.n - length(mst)
@@ -372,7 +371,24 @@ for (file in files.physio) {
   # if (problem) 
   #   warning(file)
 }
+<<<<<<< HEAD
 physiology.trials.missing %>% print(n = nrow(.))
 
 # physiology.markers %>% Filter(\(x) (x < 9), .) %>% hist()
 # physiology.markers.length
+=======
+physiology.trials.missing.compact = physiology.trials.missing
+physiology.trials.missing.compact %>% print(n = nrow(.))
+physiology.trials.missing = physiology.trials.missing %>% select(subject, trials.missing.seq) %>% separate_longer_delim(trials.missing.seq, ", ") %>% rename(trial = trials.missing.seq)
+
+##when merging conditions, you can account for missing trials using anti_join:
+# conditions = physiology.trials.missing %>% select(subject) %>% unique() %>% 
+#     crossing(tibble(trial = 1:max(physiology.trials.missing %>% pull(trial)))) %>% 
+#   mutate(condition = sample.int(4, size=n(), replace=T))
+# 
+## physiology.trials.missing %>% left_join(conditions) #check missing conditions
+# conditions.reduced = conditions %>% anti_join(physiology.trials.missing)
+# tibble(conditions.n = conditions %>% nrow(),
+#        conditions.reduced.n = conditions.reduced %>% nrow(),
+#        missings.n = physiology.trials.missing %>% nrow()) %>% mutate(check = conditions.n == conditions.reduced.n + missings.n)
+>>>>>>> 40cc514e476d05b0a2f1ba66de8fe372f4d39c35
