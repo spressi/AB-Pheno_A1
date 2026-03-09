@@ -371,12 +371,10 @@ for (file in files.physio) {
   # if (problem) 
   #   warning(file)
 }
-<<<<<<< HEAD
-physiology.trials.missing %>% print(n = nrow(.))
 
 # physiology.markers %>% Filter(\(x) (x < 9), .) %>% hist()
 # physiology.markers.length
-=======
+
 physiology.trials.missing.compact = physiology.trials.missing
 physiology.trials.missing.compact %>% print(n = nrow(.))
 physiology.trials.missing = physiology.trials.missing %>% select(subject, trials.missing.seq) %>% separate_longer_delim(trials.missing.seq, ", ") %>% rename(trial = trials.missing.seq)
@@ -391,4 +389,3 @@ physiology.trials.missing = physiology.trials.missing %>% select(subject, trials
 # tibble(conditions.n = conditions %>% nrow(),
 #        conditions.reduced.n = conditions.reduced %>% nrow(),
 #        missings.n = physiology.trials.missing %>% nrow()) %>% mutate(check = conditions.n == conditions.reduced.n + missings.n)
->>>>>>> 40cc514e476d05b0a2f1ba66de8fe372f4d39c35
