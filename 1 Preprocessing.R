@@ -41,7 +41,7 @@ questionnaires = questionnaires %>%
          sias_z_sq = scale(sias)[,1]^2,
          stai_z_sq = scale(stai)[,1]^2) %>% 
   select(subject, gender, age, sias, stai, contains("z_sq"))
-#questionnaires %>% ggplot(aes(y = sias_z_sq, x = sias)) + geom_point()
+#questionnaires %>% ggplot(aes(y = sias_z_sq, x = sias)) + geom_point() + myGgTheme
 
 # Behavior ----------------------------------------------------------------
 ## don't the the following! filter by block instead!
@@ -98,6 +98,7 @@ behavior = behavior %>%
          outlier = if_else(outlier %>% is.na(), F, outlier) #mark NAs as FALSE
   )
 
+#TODO save behavior as rds
 
 # Eye-Tracking ------------------------------------------------------------
 eye.messages = "Messages.txt" %>% paste0(path.eye, .) %>% 
@@ -262,12 +263,14 @@ for (code in baselines.summary.valid %>% pull(subject) %>% unique() %>% sort()) 
       
       result = result %>% bind_cols(fix.trial.cue %>% mutate(emotion = cueEmotion)) #TODO bind_cols(cue.conditions) instead?
       
-      #TODO target phase? using congrency
+      #TODO target phase? using congruency
       
       eye = eye %>% bind_rows(result)
     }
   }
 }
+
+#TODO save eye as rds
 
 # ECG ---------------------------------------------------------------------
 breaks.theory = length(breakPositions.theory)
