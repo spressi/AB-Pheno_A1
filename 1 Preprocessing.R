@@ -195,6 +195,8 @@ baselines.summary %>% pull(included) %>% mean()
 exclusions.eye.baseline = baselines.summary %>% filter(included == F) %>% pull(subject) %>% unique()
 baselines.summary.valid = baselines.summary %>% filter(subject %in% exclusions.eye.baseline == F)
 
+#TODO fixation cross too short? don't do baseline validation?
+
 eye = tibble()
 for (code in baselines.summary.valid %>% pull(subject) %>% unique() %>% sort()) {
   #code = inclusions.eye.baseline %>% sample(1)
