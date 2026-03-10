@@ -8,7 +8,9 @@ exclusions.eye = c()
 
 #eye baseline validation
 baseline = c(-300, 0) #Baseline in ms relative to expoID onset; min(baseline) = start; max(baseline) = end
-expoID = "fixCrossEnd"
+expoID = "fixCrossEnd" #marker for end of baseline (1st message of each trial)
+expoID2 = "Anticipation" #marker for beginning of anticipation phase (2nd message of each trial)
+expoID3 = "kongruent" #marker for beginning of stimuli/cues (3rd message of each trial)
 #useAllBaselines = list("83" = 2, "84" = 3) #manually allow all baselines of vp83 phase 2 (Gen1) & vp84 phase 3 (Gen2)
 saveBaselinePlots = F
 driftPlots = T #c("vp30", "vp33")
@@ -17,6 +19,11 @@ outlierLimit.eye = .5 #maximum percentage of invalid baselines per subject
 maxSpread = 150 #maximum spread of valid baselines (diameter / edge length)
 usePointDistance = T #use point (vector) distance instead of coordinates independently?
 source("eye_helpers.R")
+
+#ROI analysis
+validFixTime.trial = .5 #percentage of valid fixation time within trial in order to analyze trial
+validFixTime.subj = .5 #percentage of trials with sufficient valid fixation time in order to analyze subject
+
 
 
 # Questionnaires ----------------------------------------------------------
@@ -125,13 +132,13 @@ eye.messages = eye.messages %>%
 
 eye.blocks = eye.messages %>% select(subject_full, block) %>% unique()
 eye.messages = eye.messages %>% bind_rows(
-  eye.messages %>% filter(message %>% grepl("Anticipation", .)) %>% 
-    mutate(message = message %>% gsub("Anticipation", expoID, .))
+  eye.messages %>% filter(message %>% grepl(expoID2, .)) %>% 
+    mutate(message = message %>% gsub(expoID2, expoID, .))
 ) %>% mutate(time = if_else(message %>% grepl(expoID, .), time + fixCross, time), #adjust for message being sent at beginning of routine but anticipation rectangles being shown later. Check how Anticipation message time + trial message anticipation duration (3rd argument) now aligns with trial message time
-             time = if_else(message %>% grepl("Anticipation", .), time + anticipationStart, time)) %>% #adjust for message being sent at beginning of routine but anticipation rectangles being shown later. Check how Anticipation message time + trial message anticipation duration (3rd argument) now aligns with trial message time
+             time = if_else(message %>% grepl(expoID2, .), time + anticipationStart, time)) %>% #adjust for message being sent at beginning of routine but anticipation rectangles being shown later. Check how Anticipation message time + trial message anticipation duration (3rd argument) now aligns with trial message time
   arrange(subject, block, trial, time)
-# eye.messages.anticipation = eye.messages %>% filter(message %>% grepl("Anticipation", .))
-# eye.messages.cue = eye.messages %>% filter(message %>% grepl("Anticipation", .) == F)
+# eye.messages.anticipation = eye.messages %>% filter(message %>% grepl(expoID2, .))
+# eye.messages.cue = eye.messages %>% filter(message %>% grepl(expoID2, .) == F)
 
 eye.fixations = "Fixations.txt" %>% paste0(path.eye, .) %>% 
   read_delim(delim="\t", locale=locale(decimal_mark=","), na=".", show_col_types=F) %>% 
@@ -149,22 +156,25 @@ eye.fixations = "Fixations.txt" %>% paste0(path.eye, .) %>%
          y = screen.height - y) %>% 
   select(subject, block, subject_block, everything())
 
-#TODO check valid fixations
-eye.fixations.valid = eye.fixations
-#eye.fixations.valid = eye.fixations %>% mutate()
-# eye.valid.trial = fixations %>% mutate(start = start - preStim, end = end - preStim, #realign such that 0 = stim start
-#                                        start = ifelse(start < 0, 0, start), #discard fraction of fixation before stimulus
-#                                        end = ifelse(end > ratingStart, ratingStart, end), #discard fraction of fixation after rating onset
-#                                        dur = end - start) %>% filter(dur > 0) %>% 
-#   #filter(block >= 2) %>% #only generalization
-#   group_by(subject, trial, block) %>% summarise(valid = sum(dur) / ratingStart)
-# #group_by(subject) %>% summarise(valid = sum(dur) / ratingStart / length(unique(trial)))
-# with(eye.valid.trial %>% filter(block==2), hist(valid, breaks=seq(0, 1, length.out=20+1), main=paste0("Valid Fixation Time (Block ", unique(block), ")"))); abline(v=validFixTime.trial, col="red", lwd=3, lty=2)
-# with(eye.valid.trial %>% filter(block==3), hist(valid, breaks=seq(0, 1, length.out=20+1), main=paste0("Valid Fixation Time (Block ", unique(block), ")"))); abline(v=validFixTime.trial, col="red", lwd=3, lty=2)
-# 
-# #exclude trials with insufficient valid fixations (need not be validated for their baseline)
-# fixations.valid = eye.valid.trial %>% filter(valid > validFixTime.trial) %>% 
-#   left_join(fixations %>% mutate(trial = as.numeric(trial)), by=c("subject", "trial", "block")) %>% select(-valid)
+#check valid fixations
+eye.fixations.valid.trial = eye.fixations %>% 
+  left_join(eye.messages %>% filter(message %>% str_detect(expoID2)) %>% rename(onset = time) %>% select(-message)) %>% 
+  left_join(eye.messages %>% filter(message %>% str_detect(expoID3)) %>% rename(offset = time) %>% select(-message)) %>% 
+  mutate(end = ifelse(end > offset, offset, end), #discard fraction of fixation after cue onset (i.e., anticipation offset)
+         start = start - onset, end = end - onset, #realign such that 0 = anticipation start
+         start = ifelse(start < 0, 0, start), #discard fraction of fixation before anticipation
+         dur = end - start) %>% filter(dur > 0) %>%
+    summarize(.by = c(subject, trial, block),
+              valid = sum(dur) / (first(offset) - first(onset)))
+
+eye.fixations.valid.trial %>% ggplot(aes(x = valid)) + facet_wrap(~block, labeller = "label_both") +
+  geom_vline(xintercept = validFixTime.trial, color = "red", linewidth = 1.5) + #linetype = "dashed", 
+  geom_histogram(color = "black") +
+    myGgTheme
+
+#exclude trials with insufficient valid fixations (need not be validated for their baseline)
+eye.fixations.valid = eye.fixations.valid.trial %>% filter(valid > validFixTime.trial) %>%
+  left_join(eye.fixations %>% mutate(trial = as.numeric(trial)), by=c("subject", "trial", "block")) %>% select(-valid)
 
 baselines.summary = validateBaselines(eye.fixations.valid %>% select(-subject) %>% rename(subject = subject_block), 
                                       eye.messages %>% select(-subject) %>% rename(subject = subject_block), 
@@ -214,8 +224,8 @@ for (code in baselines.summary.valid %>% pull(subject) %>% unique() %>% sort()) 
       
       #anticipation
       #anticipation.start = mes.trial %>% filter(message %>% grepl(expoID, .)) %>% pull(time)
-      anticipation.start = mes.trial %>% filter(message %>% grepl("Anticipation", .)) %>% pull(time)
-      anticipation.end = mes.trial %>% filter(message %>% grepl("kongruent", .)) %>% pull(time) #also checks for "inkongruent"
+      anticipation.start = mes.trial %>% filter(message %>% grepl(expoID2, .)) %>% pull(time)
+      anticipation.end = mes.trial %>% filter(message %>% grepl(expoID3, .)) %>% pull(time) #also checks for "inkongruent"
       fix.trial.antic = fix.trial %>% 
         mutate(start = start - anticipation.start,
                start = if_else(start < 0, 0, start),
@@ -231,9 +241,9 @@ for (code in baselines.summary.valid %>% pull(subject) %>% unique() %>% sort()) 
                     summarize(antic_roiSwitches = {roi != lag(roi)} %>% sum(na.rm=T)))
       
       #cue
-      cue.start = anticipation.end #mes.trial %>% filter(message %>% grepl("kongruent", .)) %>% pull(time)
+      cue.start = anticipation.end #mes.trial %>% filter(message %>% grepl(expoID3, .)) %>% pull(time)
       cue.end = cue.start + cueTime
-      cue.conditions = mes.trial %>% filter(message %>% grepl("kongruent", .)) %>% select(message) %>% 
+      cue.conditions = mes.trial %>% filter(message %>% grepl(expoID3, .)) %>% select(message) %>% 
         separate(message, into=c(NA, NA, "antic", "pic", "picPos", "sound", "congruency", "target", "targetPos"), sep=", ") %>%
         #mutate(emotion = if_else(pic %>% grepl("_n_", .), "neutral", "angry"))
         separate(pic, into=c("model", "model_age", "model_gender", "emotion", "snapshot", "fileExt"), sep="_|\\.") %>% #, remove = F
