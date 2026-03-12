@@ -24,12 +24,14 @@ path = "C:/Data/AB_A1/" #@work
 #path = path %>% gsub("C:/Data/", "D:/Arbeit/", .) #@home
 path.data = "data/" %>% paste0(path, .)
 path.eye = "data/eye/Output/" %>% paste0(path, .)
+path.physio = "physio/" %>% paste0(path.data, .)
 
 files.behavior = path.data %>% list.files(pattern = "_custom.csv", full.names = T)
-files.physio = "physio/" %>% paste0(path.data, .) %>% list.files(pattern = ".txt", full.names = T)
+files.physio = path.physio %>% list.files(pattern = ".txt", full.names = T)
 file.que = "questionnaires/" %>% paste0(path.data, .) %>% list.files(pattern = "data_ab-pheno_a1.csv", full.names = T)
 # file.que.r = "questionnaires/" %>% paste0(path.data, .) %>% list.files(pattern = "\\.r", full.names = T)
 
+path.rds = "data/" #preprocessed files
 
 # A Priori Exclusions -----------------------------------------------------
 exclusions.phys.trials = list()
