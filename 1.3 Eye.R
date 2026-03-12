@@ -4,7 +4,7 @@ library(tidyverse)
 # Read .edf data into EyeLink DataViewer (multiple import without subfolders)
 # Create summary reports: Fixations.txt & Messages.txt
 
-exclusions.eye = c()
+exclusions.eye = c() %>% c(exclusions) %>% unique() %>% sort()
 
 #eye baseline validation
 baseline = c(-300, 0) #Baseline in ms relative to expoID onset; min(baseline) = start; max(baseline) = end
@@ -97,12 +97,12 @@ eye.fixations.valid = eye.fixations.valid.trial %>% filter(valid > validFixTime.
 
 
 # Baseline Validation -----------------------------------------------------
-baselines.summary = validateBaselines(eye.fixations.valid %>% select(-subject) %>% rename(subject = subject_block), 
+baselines.summary.block = validateBaselines(eye.fixations.valid %>% select(-subject) %>% rename(subject = subject_block), 
                                       eye.messages %>% select(-subject) %>% rename(subject = subject_block), 
                                       exclusions.eye, maxDeviation_rel, maxSpread, saveBaselinePlots, postfix="") #%>% select(subject, block, everything())
-baselines.summary = baselines.summary %>% tibble() %>% 
+baselines.summary.block = baselines.summary.block %>% tibble() %>% 
   rename(subject_block = subject) %>% separate(subject_block, c("subject", "block"), remove=F) %>% 
-  mutate(included = invalid <= outlierLimit.eye & range_x <= maxSpread & range_y <= maxSpread,
+  mutate(included_block = invalid <= outlierLimit.eye & range_x <= maxSpread & range_y <= maxSpread,
          block = block %>% as.integer())
 baselines.trial = baselines.trial %>% bind_rows(.id = "subject") %>% tibble() %>% 
   rename(subject_block = subject) %>% separate(subject_block, c("subject", "block"), remove=F) %>% 
@@ -110,13 +110,14 @@ baselines.trial = baselines.trial %>% bind_rows(.id = "subject") %>% tibble() %>
   mutate(.by = c(subject_block), trial = 1:n())
 
 
-baselines.summary %>% summarize(.by=subject, included = mean(included)) %>% arrange(included)
-baselines.summary %>% pull(included) %>% mean()
+baselines.summary = baselines.summary.block %>% 
+  summarize(.by=subject, 
+            across(invalid:range_y, \(x) x %>% mean(na.rm=T))) %>% 
+  mutate(included = invalid <= outlierLimit.eye & range_x <= maxSpread & range_y <= maxSpread)
 
 exclusions.eye.baseline = baselines.summary %>% filter(included == F) %>% pull(subject) %>% unique()
-baselines.summary.valid = baselines.summary %>% filter(subject %in% exclusions.eye.baseline == F)
-
-#TODO fixation cross too short? don't do baseline validation?
+exclusions.eye = exclusions.eye.baseline %>% c(exclusions.eye.baseline) %>% unique() %>% sort()
+baselines.summary.valid = baselines.summary %>% filter(subject %in% exclusions.eye == F)
 
 
 # ROI Analysis ------------------------------------------------------------

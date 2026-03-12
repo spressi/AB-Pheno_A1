@@ -43,14 +43,15 @@ behavior = behavior %>%
 behavior = behavior %>% mutate(emotion = if_else(face %>% grepl("_n_", .), "neutral", "angry"))
 
 behavior %>% count(subject) %>% filter(n != trials.n)
-behavior %>% select(subject, block) %>% unique() %>% complete(subject, block) %>% 
+blocks.missing = behavior %>% select(subject, block) %>% unique() %>% complete(subject, block) %>% 
   anti_join(behavior %>% select(subject, block) %>% unique()) %>% rename(block.missing = block)
-#subject 10: block 1 started again after 3 trials => moved to subfolder in order to ignore
 #subject 21: 3rd block missing
 #subject 36: blocks 1-3 missing
 #subject 46: block 4 missing
+exclusions = blocks.missing %>% count(subject) %>% filter(n > 2) %>% pull(subject) %>% c(exclusions) %>% unique() %>% sort()
 
 behavior = behavior %>% 
+  filter(subject %in% exclusions == F) %>% 
   mutate(.by = subject,
          #outlier correction
          outlier = abs((rt - mean(rt, na.rm=T))/sd(rt, na.rm=T)) > outlier.z,

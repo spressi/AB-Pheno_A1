@@ -34,6 +34,8 @@ file.que = "questionnaires/" %>% paste0(path.data, .) %>% list.files(pattern = "
 path.rds = "data/" #preprocessed files
 
 # A Priori Exclusions -----------------------------------------------------
+exclusions = c()
+
 exclusions.phys.trials = list()
 exclusions.phys.trials[["10"]] =  1:3 #discard trials 1-3 of subject 10 manually
 exclusions.phys.trials[["24"]] =  1   #discard trial  1   of subject 24 manually
