@@ -1,8 +1,9 @@
 #source("0 General.R")
 library(tidyverse)
 
-# Read .edf data into EyeLink DataViewer (multiple import without subfolders)
-# Create summary reports: Fixations.txt & Messages.txt
+# Preparation:
+# 1. Read .edf data into EyeLink DataViewer (multiple import without subfolders)
+# 2. Create summary reports: Fixations.txt & Messages.txt
 
 exclusions.eye = c() %>% c(exclusions) %>% unique() %>% sort()
 
