@@ -75,32 +75,10 @@ eye.fixations = "Fixations.txt" %>% paste0(path.eye, .) %>%
   select(subject, block, subject_block, everything())
 
 
-# Valid Fixations ---------------------------------------------------------
-eye.fixations.valid.trial = eye.fixations %>% 
-  left_join(eye.messages %>% filter(message %>% str_detect(expoID2)) %>% rename(onset = time) %>% select(-message)) %>% 
-  left_join(eye.messages %>% filter(message %>% str_detect(expoID3)) %>% rename(offset = time) %>% select(-message)) %>% 
-  mutate(end = ifelse(end > offset, offset, end), #discard fraction of fixation after cue onset (i.e., anticipation offset)
-         start = start - onset, end = end - onset, #realign such that 0 = anticipation start
-         start = ifelse(start < 0, 0, start), #discard fraction of fixation before anticipation
-         dur = end - start) %>% filter(dur > 0) %>%
-  summarize(.by = c(subject, trial, block),
-            valid = sum(dur) / (first(offset) - first(onset)))
-
-eye.fixations.valid.trial %>% 
-  ggplot(aes(x = valid)) + facet_wrap(~block, labeller = "label_both") +
-  geom_vline(xintercept = validFixTime.trial, color = "red", linewidth = 1.5) + #linetype = "dashed", 
-  geom_histogram(color = "black") +
-  myGgTheme
-
-#exclude trials with insufficient valid fixations (need not be validated for their baseline)
-eye.fixations.valid = eye.fixations.valid.trial %>% filter(valid > validFixTime.trial) %>%
-  left_join(eye.fixations %>% mutate(trial = as.numeric(trial)), by=c("subject", "trial", "block")) %>% select(-valid)
-
-
 # Baseline Validation -----------------------------------------------------
-baselines.summary.block = validateBaselines(eye.fixations.valid %>% select(-subject) %>% rename(subject = subject_block), 
-                                      eye.messages %>% select(-subject) %>% rename(subject = subject_block), 
-                                      exclusions.eye, maxDeviation_rel, maxSpread, saveBaselinePlots, postfix="") #%>% select(subject, block, everything())
+baselines.summary.block = validateBaselines(eye.fixations %>% select(-subject) %>% rename(subject = subject_block), 
+                                            eye.messages %>% select(-subject) %>% rename(subject = subject_block), 
+                                            exclusions.eye, maxDeviation_rel, maxSpread, saveBaselinePlots, postfix="") #%>% select(subject, block, everything())
 baselines.summary.block = baselines.summary.block %>% tibble() %>% 
   rename(subject_block = subject) %>% separate(subject_block, c("subject", "block"), remove=F) %>% 
   mutate(included_block = invalid <= outlierLimit.eye & range_x <= maxSpread & range_y <= maxSpread,
@@ -119,6 +97,16 @@ baselines.summary = baselines.summary.block %>%
 exclusions.eye.baseline = baselines.summary %>% filter(included == F) %>% pull(subject) %>% unique()
 exclusions.eye = exclusions.eye.baseline %>% c(exclusions.eye) %>% unique() %>% sort()
 baselines.summary.valid = baselines.summary %>% filter(subject %in% exclusions.eye == F)
+
+## check valid fixation time by problematic baselines
+# eye.fixations.valid.trial %>% 
+#   mutate(good = subject %in% exclusions.eye.baseline == F) %>%
+#   #mutate(good = subject %in% c("03", "13", "28") == F) %>% 
+#   ggplot(aes(x = valid, fill = good)) + 
+#   facet_wrap(~block, labeller = "label_both") +
+#   geom_vline(xintercept = validFixTime.trial, color = "red", linewidth = 1.5) + #linetype = "dashed", 
+#   geom_histogram(color = "black") +
+#   myGgTheme
 
 
 # ROI Analysis ------------------------------------------------------------
@@ -207,4 +195,32 @@ for (code in baselines.summary.valid %>% pull(subject) %>% unique() %>% sort()) 
   }
 }
 
-eye %>% write_rds("eye.rds" %>% paste0(path.rds, .))
+#eye %>% write_rds("eye.rds" %>% paste0(path.rds, .))
+
+
+# Valid Fixations ---------------------------------------------------------
+eye.fixations.valid.trial = eye.fixations %>% 
+  left_join(eye.messages %>% filter(message %>% str_detect(expoID2)), by = join_by(subject, block, subject_block, subject_full, trial)) %>% select(-message) %>% 
+              rename(onset = time) %>% #expoID2 = anticipation onset
+  left_join(eye.messages %>% filter(message %>% str_detect(expoID3)), by = join_by(subject, block, subject_block, subject_full, trial)) %>% select(-message) %>% 
+              rename(offset = time) %>%  #expoID3 = anticipation offset
+  mutate(end = ifelse(end > offset, offset, end), #discard fraction of fixation after cue onset (i.e., anticipation offset)
+         start = start - onset, end = end - onset, #realign such that 0 = anticipation start
+         start = ifelse(start < 0, 0, start), #discard fraction of fixation before anticipation
+         dur = end - start) %>% filter(dur > 0) %>%
+  summarize(.by = c(subject, trial, block),
+            valid = sum(dur) / (first(offset) - first(onset)))
+
+eye.fixations.valid.trial %>% 
+  ggplot(aes(x = valid)) + facet_wrap(~block, labeller = "label_both") +
+  geom_vline(xintercept = validFixTime.trial, color = "red", linewidth = 1.5) + #linetype = "dashed", 
+  geom_histogram(color = "black") +
+  myGgTheme
+
+
+#exclude trials with insufficient valid fixations
+eye.valid = eye.fixations.valid.trial %>% filter(valid > validFixTime.trial) %>%
+  left_join(eye %>% mutate(trial = as.numeric(trial)), by=c("subject", "trial", "block")) %>% select(-valid)
+#eye.valid %>% select(subject, trial, block) %>% unique() %>% count(subject)
+
+eye.valid %>% write_rds("eye.valid.rds" %>% paste0(path.rds, .))
