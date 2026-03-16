@@ -86,7 +86,8 @@ eye.fixations.valid.trial = eye.fixations %>%
   summarize(.by = c(subject, trial, block),
             valid = sum(dur) / (first(offset) - first(onset)))
 
-eye.fixations.valid.trial %>% ggplot(aes(x = valid)) + facet_wrap(~block, labeller = "label_both") +
+eye.fixations.valid.trial %>% 
+  ggplot(aes(x = valid)) + facet_wrap(~block, labeller = "label_both") +
   geom_vline(xintercept = validFixTime.trial, color = "red", linewidth = 1.5) + #linetype = "dashed", 
   geom_histogram(color = "black") +
   myGgTheme
