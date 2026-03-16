@@ -116,7 +116,7 @@ baselines.summary = baselines.summary.block %>%
   mutate(included = invalid <= outlierLimit.eye & range_x <= maxSpread & range_y <= maxSpread)
 
 exclusions.eye.baseline = baselines.summary %>% filter(included == F) %>% pull(subject) %>% unique()
-exclusions.eye = exclusions.eye.baseline %>% c(exclusions.eye.baseline) %>% unique() %>% sort()
+exclusions.eye = exclusions.eye.baseline %>% c(exclusions.eye) %>% unique() %>% sort()
 baselines.summary.valid = baselines.summary %>% filter(subject %in% exclusions.eye == F)
 
 
