@@ -185,7 +185,7 @@ for (code in baselines.summary.valid %>% pull(subject) %>% unique() %>% sort()) 
         mutate(start = start - cue.start,
                start = if_else(start < 0, 0, start),
                end = end - cue.start,
-               end = if_else(end > cue.end, cue.end, end),
+               end = if_else(end > cueTime, cueTime, end),
                dur = end - start) %>% filter(dur > 0, start < cueTime) %>% 
         select(subject, block, trial, start, end, dur, x, y, roi) %>% 
         filter(start > 0) %>% #discard initial fixation (from anticipation phase)
