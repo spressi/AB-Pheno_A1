@@ -447,16 +447,6 @@ exclusions.eye.baseline = baselines.summary %>% filter(included == F) %>% pull(s
 exclusions.eye = exclusions.eye.baseline %>% c(exclusions.eye) %>% unique() %>% sort()
 baselines.summary.valid = baselines.summary %>% filter(subject %in% exclusions.eye == F)
 
-## check valid fixation time by problematic baselines
-# eye.fixations.valid.trial %>% 
-#   mutate(good = subject %in% exclusions.eye.baseline == F) %>%
-#   #mutate(good = subject %in% c("03", "13", "28") == F) %>% 
-#   ggplot(aes(x = valid, fill = good)) + 
-#   facet_wrap(~block, labeller = "label_both") +
-#   geom_vline(xintercept = validFixTime.trial, color = "red", linewidth = 1.5) + #linetype = "dashed", 
-#   geom_histogram(color = "black") +
-#   myGgTheme
-
 
 # ROI Analysis ------------------------------------------------------------
 eye = tibble()
