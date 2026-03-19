@@ -665,8 +665,8 @@ while(T) {
 
 # Error detection ---------------------------------------------------------
 #range of heart rate changes (in percent) across all subjects
-ranges = list.files(path.rpeaks, full.names = T) %>% 
   #.[-c(4)] %>% #exclude subjects from range analysis if they have already been checked manually
+ranges = list.files(path.rpeaks, pattern = ".csv", full.names = T) %>% 
   sapply(function(x) { allrpeak = read.csv2(x); allHr = 60/diff(allrpeak$rpeaks); allHrMod = tail(allHr / lag(allHr), -1); return(range(allHrMod))})
 ranges %>% as.vector() %>% range() %>% {. * 100} %>% round(2) %>% paste0("%", collapse=", ") %>% cat("\nRange of all heart range changes (beat-by-beat, in percent): ", ., "\n")
 ranges %>% colnames() %>% .[ranges %>% which.min() %>% {. / 2} %>% ceiling()] %>% paste("Min:", .) %>% cat("\n")
