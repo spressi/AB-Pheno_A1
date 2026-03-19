@@ -466,7 +466,7 @@ for (code in baselines.summary.valid %>% pull(subject) %>% unique() %>% sort()) 
   
   baselines.vp = baselines.trial %>% filter(subject == code)
   mes.vp = eye.messages %>% filter(subject == code)
-  fix.vp = eye.fixations.valid %>% filter(subject == code) %>% 
+  fix.vp = eye.fixations %>% filter(subject == code) %>% 
     left_join(baselines.vp %>% rename(blx = x, bly = y), by = join_by(subject, block, subject_block, trial)) %>% 
     left_join(baselines.vp %>% filter(blok) %>% summarize(.by=block, x = mean(x), y = mean(y)) %>% rename(blx.avg = x, bly.avg = y), by = join_by(block)) %>% 
     mutate(x = x - if_else(blok, blx, blx.avg),
