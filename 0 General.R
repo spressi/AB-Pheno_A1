@@ -25,6 +25,7 @@ path = "C:/Data/AB_A1/" #@work
 path.data = "data/" %>% paste0(path, .)
 path.eye = "data/eye/Output/" %>% paste0(path, .)
 path.physio = "physio/" %>% paste0(path.data, .)
+path.rpeaks = "rpeaks/" %>% paste0(path.physio, .)
 
 files.behavior = path.data %>% list.files(pattern = "_custom.csv", full.names = T)
 files.physio = path.physio %>% list.files(pattern = ".txt", full.names = T)
