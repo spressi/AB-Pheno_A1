@@ -14,7 +14,7 @@ expoID = "fixCrossEnd" #marker for end of baseline (1st message of each trial)
 expoID2 = "Anticipation" #marker for beginning of anticipation phase (2nd message of each trial)
 expoID3 = "kongruent" #marker for beginning of stimuli/cues (3rd message of each trial)
 #useAllBaselines = list("83" = 2, "84" = 3) #manually allow all baselines of vp83 phase 2 (Gen1) & vp84 phase 3 (Gen2)
-saveBaselinePlots = F
+saveBaselinePlots = T
 driftPlots = T #c("vp30", "vp33")
 maxDeviation_rel = 3 #max abs value of z-score
 outlierLimit.eye = .5 #maximum percentage of invalid baselines per subject
