@@ -45,6 +45,7 @@ exclusions.phys.trials[["41"]] =  1:2 #discard trials 1-2 of subject 41 manually
 exclusions.phys.trials[["43"]] =  1:3 #discard trials 1-3 of subject 43 manually
 exclusions.phys.trials[["46"]] =  1:2 #discard trials 1-2 of subject 46 manually
 exclusions.phys.trials[["47"]] =  129:130 #discard trials 1-2 of subject 46 manually
+exclusions.phys.trials[["54"]] =  129     #discard trial  129     of subject 54 manually
 
 
 # Functions ---------------------------------------------------------------
