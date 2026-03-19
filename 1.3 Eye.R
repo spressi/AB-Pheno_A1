@@ -534,7 +534,7 @@ for (code in baselines.summary.valid %>% pull(subject) %>% unique() %>% sort()) 
   }
 }
 
-#eye %>% write_rds("eye.rds" %>% paste0(path.rds, .))
+eye %>% write_rds("eye.rds" %>% paste0(path.rds, .))
 
 
 # Valid Fixations ---------------------------------------------------------
