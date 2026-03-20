@@ -665,12 +665,29 @@ while(T) {
 
 # Error detection ---------------------------------------------------------
 #range of heart rate changes (in percent) across all subjects
-ranges = list.files(path.rpeaks, pattern = ".csv", full.names = T) %>% 
-  #.[-c(1, 19)] %>% #exclude subjects from range analysis if they have already been checked manually
-  sapply(function(x) { allrpeak = read.csv2(x); allHr = 60/diff(allrpeak$rpeaks); allHrMod = tail(allHr / lag(allHr), -1); return(range(allHrMod))})
-ranges %>% as.vector() %>% range() %>% {. * 100} %>% round(2) %>% paste0("%", collapse=", ") %>% cat("\nRange of all heart range changes (beat-by-beat, in percent): ", ., "\n")
-ranges %>% colnames() %>% .[ranges %>% which.min() %>% {. / 2} %>% ceiling()] %>% paste("Min:", .) %>% cat("\n")
-ranges %>% colnames() %>% .[ranges %>% which.max() %>% {. / 2} %>% ceiling()] %>% paste("Max:", .) %>% cat("\n")
+# ranges = list.files(path.rpeaks, pattern = ".csv", full.names = T) %>% 
+#   #.[-c(1, 19)] %>% #exclude subjects from range analysis if they have already been checked manually
+#   sapply(function(x) { allrpeak = read.csv2(x); allHr = 60/diff(allrpeak$rpeaks); allHrMod = tail(allHr / lag(allHr), -1); return(range(allHrMod))})
+# ranges %>% as.vector() %>% range() %>% {. * 100} %>% round(2) %>% paste0("%", collapse=", ") %>% cat("\nRange of all heart range changes (beat-by-beat, in percent): ", ., "\n")
+# ranges %>% colnames() %>% .[ranges %>% which.min() %>% {. / 2} %>% ceiling()] %>% paste("Min:", .) %>% cat("\n")
+# ranges %>% colnames() %>% .[ranges %>% which.max() %>% {. / 2} %>% ceiling()] %>% paste("Max:", .) %>% cat("\n")
+
+ranges = tibble()
+for (file in list.files(path.rpeaks, pattern = ".csv", full.names = T)) {
+  #file = list.files(path.rpeaks, pattern = ".csv", full.names = T) %>% sample(1) #for testing
+  ranges = ranges %>% bind_rows(
+    file %>% read.csv2() %>% 
+      mutate(segmentTime = rpeaks - min(rpeaks),
+             segment = ceiling(segmentTime / segment.length),
+             bmp = {60/diff(rpeaks)} %>% c(NA, .),
+             bmpMod = {bmp / lag(bmp)}) %>% 
+      filter(bmpMod %in% c(min(bmpMod, na.rm=T), max(bmpMod, na.rm=T))) %>% 
+      mutate(subject = file %>% pathToCode()) %>% 
+      select(subject, bmpMod, segment)
+  )
+}
+ranges %>% arrange(bmpMod) %>% rename_all(\(x) x %>% paste0("_min")) %>% 
+  bind_cols(ranges %>% arrange(desc(bmpMod)) %>% rename_all(\(x) x %>% paste0("_max"))) %>% print()
 
 #find minimum in percental heart range change for last subject
 #time.min = allrpeak[which.min(allHrMod)]; {time.min > analysis.sequence} %>% which() %>% tail(1) %>% paste0("Segment ", ., " (of ", length(analysis.sequence), ")")
