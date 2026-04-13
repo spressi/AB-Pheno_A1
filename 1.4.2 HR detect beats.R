@@ -679,15 +679,15 @@ for (file in list.files(path.rpeaks, pattern = ".csv", full.names = T)) {
     file %>% read.csv2() %>% 
       mutate(segmentTime = rpeaks - min(rpeaks),
              segment = ceiling(segmentTime / segment.length),
-             bmp = {60/diff(rpeaks)} %>% c(NA, .),
-             bmpMod = {bmp / lag(bmp)}) %>% 
-      filter(bmpMod %in% c(min(bmpMod, na.rm=T), max(bmpMod, na.rm=T))) %>% 
+             bpm = {60/diff(rpeaks)} %>% c(NA, .),
+             bpmMod = {bpm / lag(bpm)}) %>% 
+      filter(bpmMod %in% c(min(bpmMod, na.rm=T), max(bpmMod, na.rm=T))) %>% 
       mutate(subject = file %>% pathToCode()) %>% 
-      select(subject, bmpMod, segment)
+      select(subject, bpmMod, segment)
   )
 }
-ranges %>% arrange(bmpMod) %>% rename_all(\(x) x %>% paste0("_min")) %>% 
-  bind_cols(ranges %>% arrange(desc(bmpMod)) %>% rename_all(\(x) x %>% paste0("_max"))) %>% print()
+ranges %>% arrange(bpmMod) %>% rename_all(\(x) x %>% paste0("_min")) %>% 
+  bind_cols(ranges %>% arrange(desc(bpmMod)) %>% rename_all(\(x) x %>% paste0("_max"))) %>% print()
 
 #find minimum in percental heart range change for last subject
 #time.min = allrpeak[which.min(allHrMod)]; {time.min > analysis.sequence} %>% which() %>% tail(1) %>% paste0("Segment ", ., " (of ", length(analysis.sequence), ")")
