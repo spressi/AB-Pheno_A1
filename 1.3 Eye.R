@@ -558,8 +558,17 @@ eye.fixations.valid.trial %>%
 
 
 #exclude trials with insufficient valid fixations
-eye.valid = eye.fixations.valid.trial %>% filter(valid > validFixTime.trial) %>%
+eye.valid = eye.fixations.valid.trial %>% filter(valid >= validFixTime.trial) %>%
   left_join(eye %>% mutate(trial = as.numeric(trial)), by=c("subject", "trial", "block")) %>% select(-valid)
-#eye.valid %>% select(subject, trial, block) %>% unique() %>% count(subject)
+
+eye.valid.subject = eye.valid %>% select(subject, trial, block) %>% unique() %>% count(subject)
+#eye.valid.subject %>% arrange(n)
+exclusions.eye.valid = eye.valid.subject %>% filter(n/trials.n < validFixTime.subj) %>% pull(subject) %>% unique()
+exclusions.eye = exclusions.eye.valid %>% c(exclusions.eye) %>% unique() %>% sort()
+
+eye.valid = eye.valid %>% filter(subject %in% exclusions.eye == F)
+eye.valid.subject = eye.valid %>% select(subject, trial, block) %>% unique() %>% count(subject)
+
+eye.valid.subject %>% summarize(trials_m = mean(n), trials_sd = sd(n))
 
 eye.valid %>% write_rds("eye.valid.rds" %>% paste0(path.rds, .))
