@@ -1,4 +1,5 @@
 library(tidyverse)
+library(DescTools) #Winsorize function
 
 trials.n = 256 #number of trials that shall be analyzed (if more trials are present, last ones will be taken)
 breakPositions.theory = 256/4 * 1:3 #trial numbers after which a break should occur
@@ -59,6 +60,10 @@ pathToCode = function(path, path.sep="/", file.ext="\\.") {
 
 se = function(x, na.rm = TRUE) {
   sd(x, na.rm) / sqrt(if(!na.rm) length(x) else sum(!is.na(x)))
+}
+
+Winsorize.z = function(x, z, ...) {
+  DescTools::Winsorize(x, pnorm(z), ...)
 }
 
 read.phys = function(path) {

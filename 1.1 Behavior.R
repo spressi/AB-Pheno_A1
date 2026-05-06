@@ -1,7 +1,7 @@
 #source("0 General.R")
 library(tidyverse)
 
-outlier.z = 2 #z score that an RT must exceed (within participant) in order to be classified as an outlier
+outlier.z = 2 * c(-1, 1) #z score(s) that an RT must exceed (within participant) in order to be classified as an outlier
 
 ## don't the the following! filter by block instead!
 # files.behavior.checker = tibble(filename = files.behavior) %>% 
@@ -55,6 +55,7 @@ behavior = behavior %>%
   mutate(.by = subject,
          #outlier correction
          outlier = abs((rt - mean(rt, na.rm=T))/sd(rt, na.rm=T)) > outlier.z,
+         rt = Winsorize.z(rt, outlier.z),
          outlier = if_else(outlier %>% is.na(), F, outlier) #mark NAs as FALSE
   )
 
