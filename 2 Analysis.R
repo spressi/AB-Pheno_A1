@@ -5,8 +5,12 @@ library(apa)
 
 
 # Descriptives ------------------------------------------------------------
-questionnaires %>% select(age:stai) %>% summarize(across(everything(), list(m = mean, sd = sd), na.rm=T))
 questionnaires %>% count(gender)
+questionnaires %>% summarize(across(c(age, sias, stai), list(m = mean, sd = sd), na.rm=T))
+
+questionnaires %>% ggplot(aes(x = sias)) + geom_histogram(fill = "orange", color = "black") + myGgTheme
+questionnaires %>% ggplot(aes(x = stai)) + geom_histogram(fill = "violet", color = "black") + myGgTheme
+
 
 # RT ----------------------------------------------------------------------
 behavior.exclude = behavior %>% 

@@ -32,13 +32,5 @@ behavior %>% pull(subject) %>% setdiff(questionnaires %>% pull(subject)) #check 
 #questionnaires %>% ggplot(aes(y = sias_z_sq, x = sias)) + geom_point() + myGgTheme #check quadratic predictor
 
 
-# Descriptives ------------------------------------------------------------
-questionnaires %>% count(gender)
-questionnaires %>% summarize(across(.cols = c(age, sias, stai),
-                                    .fns = c(m = mean, sd = sd)))
-questionnaires %>% ggplot(aes(x = sias)) + geom_histogram(fill = "orange", color = "black") + myGgTheme
-questionnaires %>% ggplot(aes(x = stai)) + geom_histogram(fill = "violet", color = "black") + myGgTheme
-
-
 # Output ------------------------------------------------------------------
 questionnaires %>% write_rds("questionnaires.rds" %>% paste0(path.rds, .))
