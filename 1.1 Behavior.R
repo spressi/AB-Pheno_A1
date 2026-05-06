@@ -45,9 +45,10 @@ behavior = behavior %>% mutate(emotion = if_else(face %>% grepl("_n_", .), "neut
 behavior %>% count(subject) %>% filter(n != trials.n)
 blocks.missing = behavior %>% select(subject, block) %>% unique() %>% complete(subject, block) %>% 
   anti_join(behavior %>% select(subject, block) %>% unique()) %>% rename(block.missing = block)
-#subject 21: 3rd block missing
+#subject 21: block 3 missing
 #subject 36: blocks 1-3 missing
 #subject 46: block 4 missing
+#subject 56: block 3 missing
 exclusions = blocks.missing %>% count(subject) %>% filter(n > 2) %>% pull(subject) %>% c(exclusions) %>% unique() %>% sort()
 
 behavior = behavior %>% 
