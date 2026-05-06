@@ -2,6 +2,7 @@
 library(tidyverse)
 
 outlier.z = 2 * c(-1, 1) #z score(s) that an RT must exceed (within participant) in order to be classified as an outlier
+#note: if you only want to correct responses that are too fast, add -Inf to the vector
 
 ## don't the the following! filter by block instead!
 # files.behavior.checker = tibble(filename = files.behavior) %>% 
@@ -55,9 +56,9 @@ behavior = behavior %>%
   filter(subject %in% exclusions == F) %>% 
   mutate(.by = subject,
          #outlier correction
-         outlier = abs((rt - mean(rt, na.rm=T))/sd(rt, na.rm=T)) > outlier.z,
-         rt = Winsorize.z(rt, outlier.z),
-         outlier = if_else(outlier %>% is.na(), F, outlier) #mark NAs as FALSE
+         outlier = (rt - mean(rt, na.rm=T))/sd(rt, na.rm=T) > max(outlier.z) |
+           (rt - mean(rt, na.rm=T))/sd(rt, na.rm=T) < min(outlier.z),
+         rt = Winsorize.z(rt, outlier.z)
   )
 
 behavior %>% write_rds("behavior.rds" %>% paste0(path.rds, .))
