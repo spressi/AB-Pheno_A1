@@ -37,8 +37,8 @@ behavior.rt %>% summarize(.by = c(emotion, congruency),
                           rt.se = se(rt, na.rm=T),
                           rt = mean(rt, na.rm=T)) %>% 
   ggplot(aes(x = congruency, y = rt, color = emotion)) +
-  geom_errorbar(aes(ymin = rt - rt.se, ymax = rt + rt.se), position = position_dodge(width = .5), width = .5) +
-  geom_point(position = position_dodge(width = .5))
+  geom_errorbar(aes(ymin = rt - rt.se, ymax = rt + rt.se), position = position_dodge(width = .5), width = .5, linewidth = 2) +
+  geom_point(position = position_dodge(width = .5), size = 6)
 
 
 
@@ -57,8 +57,8 @@ behavior.acc %>% summarize(.by = c(emotion, congruency),
                            accuracy.se = se(accuracy, na.rm=T),
                            accuracy = mean(accuracy, na.rm=T)) %>% 
   ggplot(aes(x = congruency, y = accuracy, color = emotion)) +
-  geom_errorbar(aes(ymin = accuracy - accuracy.se, ymax = accuracy + accuracy.se), position = position_dodge(width = .5), width = .5) +
-  geom_point(position = position_dodge(width = .5))
+  geom_errorbar(aes(ymin = accuracy - accuracy.se, ymax = accuracy + accuracy.se), position = position_dodge(width = .5), width = .5, linewidth = 2) +
+  geom_point(position = position_dodge(width = .5), size = 6)
 
 
 
@@ -116,10 +116,10 @@ with(eye.cue, cor.test(cue_lat_neutral, cue_dwell_neutral)) %>% apa::cor_apa(r_c
 
 
 # For bachelor student ----------------------------------------------------
-behavior.rt %>% full_join(behavior.acc) %>% 
-  pivot_wider(id_cols = subject, names_from = c(emotion, congruency), values_from = c(rt, accuracy)) %>% 
-  full_join(questionnaires, .) %>% #questionnaires first (but not in code because of pivot_wider)
-  full_join(eye.antic) %>% 
-  full_join(eye.cue) %>% 
-  arrange(subject) %>% 
-  write_csv("data/jamovi.csv")
+# behavior.rt %>% full_join(behavior.acc) %>% 
+#   pivot_wider(id_cols = subject, names_from = c(emotion, congruency), values_from = c(rt, accuracy)) %>% 
+#   full_join(questionnaires, .) %>% #questionnaires first (but not in code because of pivot_wider)
+#   full_join(eye.antic) %>% 
+#   full_join(eye.cue) %>% 
+#   arrange(subject) %>% 
+#   write_csv("data/jamovi.csv")
