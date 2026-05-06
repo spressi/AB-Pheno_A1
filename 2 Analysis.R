@@ -1,7 +1,27 @@
-source("1 Preprocessing.R") #TODO: rather work with imports of RDS files? (data/prepro)
+#source("1 Preprocessing.R")
 
+library(tidyverse)
 library(ez)
 library(apa)
+
+
+# Read Preprocessed Files -------------------------------------------------
+behavior = read_rds("behavior.rds" %>% paste0(path.rds, .))
+questionnaires = read_rds("questionnaires.rds" %>% paste0(path.rds, .))
+eye.valid = read_rds("eye.valid.rds" %>% paste0(path.rds, .))
+#TODO add physio
+
+
+# Apply Exclusions --------------------------------------------------------
+subjects.analysis = behavior %>% pull(subject) %>% 
+  intersect(questionnaires %>% pull(subject)) %>% 
+  intersect(eye.valid %>% pull(subject))
+#TODO add physio
+
+behavior = behavior %>% filter(subject %in% subjects.analysis)
+questionnaires = questionnaires %>% filter(subject %in% subjects.analysis)
+eye.valid = eye.valid %>% filter(subject %in% subjects.analysis)
+#TODO add physio
 
 
 # Descriptives ------------------------------------------------------------
@@ -72,7 +92,7 @@ eye.antic = eye %>% select(subject:trial, starts_with("antic_")) %>%
 
 #Scan Path Length
 eye.antic %>% pull(antic_dist) %>% summary()
-eye.antic %>% pull(antic_dist) %>% hist()
+eye.antic %>% ggplot(aes(x = antic_dist)) + geom_histogram(fill = "red", color = "black") + myGgTheme
 eye.antic %>% summarize(across(antic_dist, list(m = mean, sd = sd)))
 
 with(eye.antic, cor.test(antic_dist_z_sq, sias, alternative="greater")) %>% apa::cor_apa(r_ci=T)
@@ -80,7 +100,7 @@ with(eye.antic, cor.test(antic_dist_z_sq, stai, alternative="greater")) %>% apa:
 
 #ROI Switches
 eye.antic %>% pull(antic_roiSwitches) %>% summary()
-eye.antic %>% pull(antic_roiSwitches) %>% hist()
+eye.antic %>% ggplot(aes(x = antic_roiSwitches)) + geom_histogram(fill = "red4", color = "black") + myGgTheme
 eye.antic %>% summarize(across(antic_roiSwitches, list(m = mean, sd = sd)))
 
 with(eye.antic, cor.test(antic_roiSwitches_z_sq, sias, alternative="greater")) %>% apa::cor_apa(r_ci=T)
@@ -114,6 +134,7 @@ with(eye.cue, cor.test(cue_lat_angry, cue_dwell_angry)) %>% apa::cor_apa(r_ci=T)
 with(eye.cue, cor.test(cue_lat_neutral, cue_dwell_neutral)) %>% apa::cor_apa(r_ci=T)
 #TODO ANOVA with continuous predictor to check significance of interaction
 
+#TODO physio
 
 # For bachelor student ----------------------------------------------------
 # behavior.rt %>% full_join(behavior.acc) %>% 
