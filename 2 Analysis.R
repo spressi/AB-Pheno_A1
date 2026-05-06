@@ -33,17 +33,27 @@ questionnaires %>% ggplot(aes(x = stai)) + geom_histogram(fill = "violet", color
 
 
 # RT ----------------------------------------------------------------------
-behavior.exclude = behavior %>% 
+
+# * RT Data Quality -------------------------------------------------------
+behavior.quality = behavior %>% 
   summarize(.by = subject,
-            valid = mean(correct & !outlier, na.rm=T),
+            #valid = mean(correct & !outlier, na.rm=T),
             correct = mean(correct, na.rm=T),
             outlier = mean(outlier, na.rm=T)) %>% 
-  arrange(valid) %>% 
-  filter(valid < .75) %>% pull(subject)
+  #arrange(valid)
+  arrange(correct)
 
+behavior.quality
+#Discussion: should have preregistered a criterion to remove subjects with too many incorrect answers (subject 30)
+
+behavior.quality %>% summarize(across(-subject, list(m = mean, sd = sd), na.rm=T))
+
+#TODO add reliability
+
+# * RT Analysis -----------------------------------------------------------
 behavior.analysis = behavior %>% filter(subject %in% behavior.exclude == F)
 
-behavior.rt = behavior.analysis %>% filter(correct & !outlier) %>% 
+behavior.rt = behavior %>% filter(correct) %>% 
   summarize(.by = c(subject, emotion, congruency), #, face_pos, target, keyAssignment
             rt = mean(rt, na.rm=T))
 
@@ -63,7 +73,7 @@ behavior.rt %>% summarize(.by = c(emotion, congruency),
 
 
 # Accuracy ----------------------------------------------------------------
-behavior.acc = behavior.analysis %>% 
+behavior.acc = behavior %>% 
   summarize(.by = c(subject, emotion, congruency), #, face_pos, target, keyAssignment
             accuracy = mean(correct, na.rm=T))
 
