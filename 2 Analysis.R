@@ -51,16 +51,15 @@ behavior.quality %>% summarize(across(-subject, list(m = mean, sd = sd), na.rm=T
 #TODO add reliability
 
 # * RT Analysis -----------------------------------------------------------
-behavior.analysis = behavior %>% filter(subject %in% behavior.exclude == F)
-
 behavior.rt = behavior %>% filter(correct) %>% 
   summarize(.by = c(subject, emotion, congruency), #, face_pos, target, keyAssignment
-            rt = mean(rt, na.rm=T))
+            rt = mean(rt, na.rm=T)) %>% 
+  mutate(rt = rt * 1000) #convert to ms (readability of axis for plots)
 
 behavior.rt %>% ez::ezANOVA(dv = rt,
                             wid = subject,
                             within = c(emotion, congruency),
-                            detailed = T) %>% apa::anova_apa(sph_corr = "gg", force_sph_corr = T)
+                            detailed = T) %>% apa::anova_apa(force_sph_corr = T)
 
 behavior.rt %>% summarize(.by = c(emotion, congruency),
                           rt.sd = sd(rt, na.rm=T),
@@ -68,19 +67,21 @@ behavior.rt %>% summarize(.by = c(emotion, congruency),
                           rt = mean(rt, na.rm=T)) %>% 
   ggplot(aes(x = congruency, y = rt, color = emotion)) +
   geom_errorbar(aes(ymin = rt - rt.se, ymax = rt + rt.se), position = position_dodge(width = .5), width = .5, linewidth = 2) +
-  geom_point(position = position_dodge(width = .5), size = 6)
+  geom_point(position = position_dodge(width = .5), size = 6) +
+  ylab("Reaction Time (ms)") + myGgTheme
 
 
 
 # Accuracy ----------------------------------------------------------------
 behavior.acc = behavior %>% 
   summarize(.by = c(subject, emotion, congruency), #, face_pos, target, keyAssignment
-            accuracy = mean(correct, na.rm=T))
+            accuracy = mean(correct, na.rm=T)) %>% 
+  mutate(accuracy = accuracy * 100) #convert to %
 
 behavior.acc %>% ez::ezANOVA(dv = accuracy,
                              wid = subject,
                              within = c(emotion, congruency),
-                             detailed = T) %>% apa::anova_apa(sph_corr = "gg", force_sph_corr = T)
+                             detailed = T) %>% apa::anova_apa(force_sph_corr = T)
 
 behavior.acc %>% summarize(.by = c(emotion, congruency),
                            accuracy.sd = sd(accuracy, na.rm=T),
@@ -88,7 +89,8 @@ behavior.acc %>% summarize(.by = c(emotion, congruency),
                            accuracy = mean(accuracy, na.rm=T)) %>% 
   ggplot(aes(x = congruency, y = accuracy, color = emotion)) +
   geom_errorbar(aes(ymin = accuracy - accuracy.se, ymax = accuracy + accuracy.se), position = position_dodge(width = .5), width = .5, linewidth = 2) +
-  geom_point(position = position_dodge(width = .5), size = 6)
+  geom_point(position = position_dodge(width = .5), size = 6) +
+  ylab("Accuracy (%)") + myGgTheme
 
 
 
